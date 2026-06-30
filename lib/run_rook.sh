@@ -282,6 +282,7 @@ run_rook_diagnostics() {
 
   safe_run "$out_dir/k8s-namespaces.txt"   kubectl get ns
   safe_run "$out_dir/rook-pods.txt"         kubectl -n "$ns" get pods -o wide
+  safe_run "$out_dir/rook-jobs.txt"         kubectl -n "$ns" get jobs -o wide
   safe_run "$out_dir/storageclasses.txt"    kubectl get storageclass
   safe_run "$out_dir/events.txt"            kubectl get events -A --sort-by=.lastTimestamp
   safe_run "$out_dir/operator-describe.txt" kubectl -n "$ns" describe deploy rook-ceph-operator
@@ -291,6 +292,11 @@ run_rook_diagnostics() {
     safe_run "$out_dir/${name}.describe.txt" kubectl -n "$ns" describe "$pod"
     safe_run "$out_dir/${name}.logs.txt"     kubectl -n "$ns" logs "$pod" \
       --all-containers=true --tail=-1
+  done
+
+  kubectl get jobs -n "$ns" -o name 2>/dev/null | while read -r job; do
+    name="${job##*/}"
+    safe_run "$out_dir/${name}.describe.txt" kubectl -n "$ns" describe "$job"
   done
 
   # Derive a short timestamp for K8s object names (no colons, lowercase)
